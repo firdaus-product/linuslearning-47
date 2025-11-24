@@ -3,374 +3,446 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kemahiran Pemulihan: Masa dan Waktu (Pembelajaran)</title>
+  <title>Kemahiran Pemulihan: Masa & Waktu</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
-    body { box-sizing: border-box; }
-    .activity-card { min-height: 400px; }
-    .number-card { transition: all .3s ease; cursor: pointer; }
-    .number-card:hover { transform: scale(1.05); }
-    .dragging { opacity: .5; transform: rotate(5deg); }
-
-    .drop-zone { border: 2px dashed #cbd5e1; transition: all .3s ease; min-width: 60px; min-height: 60px; display: inline-block; vertical-align: middle; }
-    .drop-zone.drag-over { border-color: #3b82f6; background-color: #eff6ff; }
-
-    @keyframes shake { 0%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-5px)}100%{transform:translateX(0)} }
-    .shake { animation: shake 0.5s ease; }
-
-    .drop-zone-filled { border-style: solid; border-color: #4ade80; background-color: #f0fdf4; }
+    /* --- UI STYLE (MASTER REFERENCE - TEMA HIJAU) --- */
+    body { 
+        font-family: 'Fredoka', sans-serif; 
+        background-color: #f0fdf4; 
+        background-image: radial-gradient(#86efac 2px, transparent 2px); 
+        background-size: 30px 30px; 
+    }
     
-    /* Jam */
-    .clock-face { width: 250px; height: 250px; border: 8px solid #3b82f6; border-radius: 50%; position: relative; margin: 20px auto; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
-    .hour-hand { width: 8px; height: 70px; background: #475569; transform: translateX(-50%) rotate(0deg); z-index: 10; }
-    .minute-hand { width: 6px; height: 100px; background: #64748b; transform: translateX(-50%) rotate(0deg); z-index: 9; }
-    .clock-center { width: 12px; height: 12px; background: #1e293b; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 11; }
+    .game-card { 
+        background: white; 
+        border: 4px solid #475569; 
+        box-shadow: 8px 8px 0px #00000020; 
+        border-radius: 1.5rem; 
+        min-height: 600px; 
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    /* Buttons */
+    .btn-3d { 
+        transition: all 0.1s; 
+        border-bottom-width: 6px; 
+        border-color: rgba(0,0,0,0.2); 
+        transform: translateY(0); 
+        cursor: pointer; 
+        display: inline-block; 
+    }
+    .btn-3d:active:not(:disabled) { transform: translateY(4px); border-bottom-width: 2px; box-shadow: none; }
+    .btn-3d:disabled { opacity: 0.6; cursor: not-allowed; border-bottom-width: 6px; filter: grayscale(100%); }
 
-    /* Garis Masa */
-    #timeline-display { transition: background-color 0.5s ease; background: #f1f5f9; color: #0f172a; }
-    #timeline-display.night { background: #0c4a6e; color: white; }
-    #timeline-display.dawn  { background: #fdba74; color: #451a03; }
-    #timeline-display.day   { background: #7dd3fc; color: #0c4a6e; }
-    #timeline-display.dusk  { background: #f9a8d4; color: #581c87; }
+    /* Animation */
+    .shake { animation: shake 0.4s ease-in-out; border-color: #ef4444 !important; background-color: #fee2e2 !important; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px) rotate(-5deg); } 75% { transform: translateX(8px) rotate(5deg); } }
+
+    /* --- STYLE KHUSUS MASA --- */
+    
+    /* Drop Zone Standard */
+    .drop-zone { 
+        border: 3px dashed #94a3b8; background-color: #f8fafc; 
+        transition: all .3s ease; border-radius: 0.75rem; 
+        min-width: 100px; min-height: 60px; 
+        display: flex; align-items: center; justify-content: center;
+        font-weight: bold; color: #334155;
+    }
+    .drop-zone.drag-over { border-color: #3b82f6; background-color: #dbeafe; transform: scale(1.05); }
+    .drop-zone-filled { border-style: solid; border-color: #4ade80; background-color: #f0fdf4; color: #15803d; }
+
+    /* Jam Analog */
+    .clock-face { 
+        width: 260px; height: 260px; 
+        border: 8px solid #475569; 
+        background: white;
+        border-radius: 50%; 
+        position: relative; 
+        margin: 20px auto; 
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    }
+    .clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; border-radius: 10px; z-index: 10; }
+    .hour-hand { width: 8px; height: 70px; background: #1e293b; transform: translateX(-50%) rotate(0deg); }
+    .minute-hand { width: 6px; height: 100px; background: #ef4444; transform: translateX(-50%) rotate(0deg); }
+    .clock-center { width: 16px; height: 16px; background: #475569; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; }
+    .clock-number { position: absolute; font-weight: bold; color: #94a3b8; font-size: 1.2rem; }
+
+    /* Garis Masa Backgrounds */
+    #timeline-display { transition: all 0.5s ease; border: 4px solid rgba(0,0,0,0.1); }
+    #timeline-display.night { background: #0f172a; color: white; }
+    #timeline-display.dawn  { background: #fdba74; color: #7c2d12; }
+    #timeline-display.day   { background: #bae6fd; color: #0c4a6e; }
+    #timeline-display.dusk  { background: #fbcfe8; color: #831843; }
+
+    /* Item Kad (General) */
+    .item-card {
+        background: white; border: 2px solid #e2e8f0; border-radius: 0.75rem;
+        padding: 1rem; font-weight: bold; cursor: pointer; text-align: center;
+        box-shadow: 4px 4px 0 rgba(0,0,0,0.1); transition: transform 0.1s;
+    }
+    .item-card:active { transform: scale(0.95); }
+    .item-card:hover { border-color: #3b82f6; }
+
   </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-full">
+<body class="min-h-screen text-slate-800 pb-10">
 
-  <div class="bg-yellow-100 border-b-4 border-yellow-300 p-4 shadow-sm sticky top-0 z-20">
-    <div class="max-w-6xl mx-auto flex items-center justify-between">
+  <div class="fixed top-4 left-0 right-0 z-50 px-4 pointer-events-none">
+    <div class="max-w-4xl mx-auto bg-green-400 border-4 border-green-600 rounded-full px-6 py-3 shadow-xl flex items-center justify-between pointer-events-auto transform hover:scale-[1.01] transition-transform">
       <div class="flex items-center gap-3">
-        <span class="text-2xl">📚</span>
-        <span id="info-text" class="text-lg font-semibold text-gray-800">Pilih aktiviti untuk mula belajar masa dan waktu!</span>
+        <span class="text-3xl animate-bounce">⏰</span>
+        <span id="info-text" class="text-xl font-bold text-green-900 leading-none mt-1">Pilih aktiviti untuk mula!</span>
       </div>
-      <button id="speak-btn" type="button"
-              class="bg-yellow-300 hover:bg-yellow-400 text-yellow-800 font-bold py-2 px-4 rounded-full text-xl transition-colors duration-200"
-              onclick="speakInfo()">
-        🔊
-      </button>
+      <button id="speak-btn" onclick="speakInfo()" class="bg-white hover:bg-green-50 text-green-600 border-2 border-green-200 rounded-full p-2 transition-colors shadow-sm">🔊</button>
     </div>
   </div>
+  <div class="h-24"></div>
 
-  <div class="max-w-6xl mx-auto p-6">
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 activity-card flex items-center justify-center">
-      <div id="activity-content" class="text-center w-full">
-        <div class="py-16">
-          <div class="text-6xl mb-4">⏰</div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">Kemahiran Pemulihan: Masa dan Waktu</h2>
-          <p class="text-xl text-gray-600 mb-8">Pilih aktiviti di bawah untuk meneroka konsep jam dan masa.</p>
-          <div class="text-4xl">👇</div>
+  <div class="max-w-6xl mx-auto p-4">
+    
+    <div class="game-card p-8 mb-8">
+        <div id="activity-content" class="w-full relative z-10 flex flex-col items-center justify-center h-full transition-opacity duration-200">
+            <div class="py-10 text-center">
+                <div class="text-8xl mb-6 animate-pulse">🕰️</div>
+                <h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2>
+                <p class="text-2xl text-slate-500 mb-8 font-semibold">Belajar jam, minit, dan jadual harian.</p>
+                <div class="text-4xl animate-bounce">👇</div>
+            </div>
         </div>
-      </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Pilih Aktiviti</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <button type="button" onclick="loadActivity(1)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">⚙️ Jam Ajaib</button>
-        <button type="button" onclick="loadActivity(2)" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">5️⃣ Eksplorasi Gandaan 5</button>
-        <button type="button" onclick="loadActivity(3)" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">☀️ Garis Masa 24 Jam</button>
-        <button type="button" onclick="loadActivity(4)" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">📋 Padanan Waktu</button>
-        <button type="button" onclick="loadActivity(5)" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">Tugasan 🧑‍🎨 Jadual Saya</button>
+    <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-6 border-2 border-white">
+      <h3 class="text-2xl font-bold text-slate-700 mb-4 text-center">🎮 Pilih Aktiviti</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <button onclick="loadActivity(1)" class="btn-3d bg-blue-500 text-white font-bold py-4 px-2 rounded-xl text-lg">⚙️ Jam Ajaib</button>
+        <button onclick="loadActivity(2)" class="btn-3d bg-green-500 text-white font-bold py-4 px-2 rounded-xl text-lg">5️⃣ Gandaan 5</button>
+        <button onclick="loadActivity(3)" class="btn-3d bg-purple-500 text-white font-bold py-4 px-2 rounded-xl text-lg">☀️ Garis Masa</button>
+        <button onclick="loadActivity(4)" class="btn-3d bg-orange-500 text-white font-bold py-4 px-2 rounded-xl text-lg">📋 Padanan</button>
+        <button onclick="loadActivity(5)" class="btn-3d bg-red-500 text-white font-bold py-4 px-2 rounded-xl text-lg">📅 Jadual Saya</button>
       </div>
 
-      <div class="flex justify-center gap-4">
-        <button type="button" onclick="clearActivity()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">🧹 Bersih</button>
-        <button type="button" onclick="nextActivity()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">➡️ Seterusnya</button>
+      <div class="flex justify-center gap-4 border-t-2 border-slate-100 pt-6">
+        <button onclick="clearActivity()" class="btn-3d bg-slate-400 text-white font-bold py-2 px-6 rounded-full text-lg">🏠 Menu</button>
+        <button onclick="nextActivity()" class="btn-3d bg-indigo-500 text-white font-bold py-2 px-8 rounded-full text-xl">Seterusnya ➡️</button>
       </div>
     </div>
   </div>
 
-<script>
-(() => {
-  let currentActivity = 0;
-  let ttsEnabled = false;
-  let currentInfo = "Pilih aktiviti untuk mula belajar masa dan waktu!";
-  let draggedElement = null;
+  <script>
+    /* --- STANDARD HELPERS --- */
+    let currentActivity = 0;
+    let ttsEnabled = false;
+    let currentInfo = "Pilih aktiviti untuk mula belajar masa!";
+    let draggedElement = null;
 
-  /* ====== TTS ====== */
-  function speak(text) {
-    try {
-      if (!ttsEnabled) return;
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
+    function triggerWin() { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); }
+
+    function speak(text) { 
+        if (!ttsEnabled || !('speechSynthesis' in window)) return; 
+        window.speechSynthesis.cancel(); 
+        const u = new SpeechSynthesisUtterance(text); u.lang = 'ms-MY'; u.rate = 0.95; u.pitch = 1.05; 
+        const ms = window.speechSynthesis.getVoices().find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms')); 
+        if (ms) u.voice = ms; 
+        window.speechSynthesis.speak(u); 
+    }
+    
+    function setInfo(text) { 
+        currentInfo = text; const infoEl = document.getElementById('info-text'); 
+        infoEl.style.opacity = 0; setTimeout(() => { infoEl.textContent = text; infoEl.style.opacity = 1; }, 200); 
+    }
+    
+    function speakInfo() { 
+        if (!ttsEnabled) { ttsEnabled = true; document.getElementById('speak-btn').classList.add('bg-green-100', 'text-green-600'); } 
+        speak(currentInfo); 
+    }
+
+    /* --- DRAG & DROP HELPERS --- */
+    window.dragStart = function(e) { draggedElement = e.target; e.target.classList.add('opacity-50'); }
+    window.dragEnd = function(e) { if(e.target) e.target.classList.remove('opacity-50'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
+    window.allowDrop = function(e) { e.preventDefault(); if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.add('drag-over'); }
+    window.dragLeave = function(e) { if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.remove('drag-over'); }
+
+    /* --- ROUTER --- */
+    function loadActivity(n) {
+      currentActivity = n;
+      const content = document.getElementById('activity-content');
+      content.style.opacity = 0;
       setTimeout(() => {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ms-MY';
-        u.rate = 0.9; u.pitch = 1.05;
-        const voices = window.speechSynthesis.getVoices();
-        const ms = voices.find(v => v.lang && (v.lang === 'ms-MY' || v.lang.startsWith('ms')));
-        if (ms) u.voice = ms;
-        window.speechSynthesis.speak(u);
-      }, 100);
-    } catch(e) { /* jangan matikan skrip hanya sebab TTS */ }
-  }
-  window.speakInfo = function speakInfo() {
-    if (!ttsEnabled) {
-      ttsEnabled = true;
-      const btn = document.getElementById('speak-btn');
-      btn.classList.add('bg-green-300','hover:bg-green-400');
-      btn.classList.remove('bg-yellow-300','hover:bg-yellow-400');
+          if (n === 1) loadClockSandbox(content);
+          if (n === 2) loadExploreFives(content);
+          if (n === 3) loadTimelineActivity(content);
+          if (n === 4) loadTimeMatching(content);
+          if (n === 5) loadScheduleBuilder(content);
+          content.style.opacity = 1;
+      }, 200);
     }
-    speak(currentInfo);
-  };
-  function setInfo(text){ currentInfo = text; const el=document.getElementById('info-text'); if(el) el.textContent = text; }
 
-  /* ====== DnD helpers ====== */
-  window.dragStart = function(e){ draggedElement = e.target; e.target.classList.add('dragging'); };
-  window.dragEnd   = function(e){ e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); };
-  window.allowDrop = function(e){ e.preventDefault(); if (e.currentTarget.classList && e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.add('drag-over'); };
-  window.dragLeave = function(e){ if (e.currentTarget.classList && e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.remove('drag-over'); };
-
-  /* ====== Router ====== */
-  window.loadActivity = function(n){
-    currentActivity = n;
-    const content = document.getElementById('activity-content');
-    if (!content) return;
-    if (n === 1) return loadClockSandbox(content);
-    if (n === 2) return loadExploreFives(content);
-    if (n === 3) return loadTimelineActivity(content);
-    if (n === 4) return loadTimeMatching(content);
-    if (n === 5) return loadScheduleBuilder(content);
-  };
-
-  /* ====== Aktiviti 1: Jam Ajaib ====== */
-  function loadClockSandbox(content) {
-    setInfo("Gunakan slider 'Jam' dan 'Minit' untuk meneroka jam. Perhatikan jarum jam (pendek) bergerak apabila jarum minit (panjang) melepasi 12.");
-    content.innerHTML = `
-      <h3 class="text-2xl font-bold text-blue-600 mb-4">⚙️ Jam Ajaib (Sandbox)</h3>
-      <div class="clock-face">
-        <div id="hour-hand" class="clock-hand hour-hand"></div>
-        <div id="minute-hand" class="clock-hand minute-hand"></div>
-        <div class="clock-center"></div>
-      </div>
-      <div id="digital-display" class="text-4xl font-bold text-gray-800 mb-4">00:00</div>
-      <div class="max-w-md mx-auto space-y-4">
-        <div>
-          <label for="hour-slider" class="text-lg font-semibold">Jam (0-11)</label>
-          <input id="hour-slider" type="range" min="0" max="11" value="0" step="1" class="w-full" oninput="updateClockDisplay()">
-        </div>
-        <div>
-          <label for="minute-slider" class="text-lg font-semibold">Minit (0-55, gandaan 5)</label>
-          <input id="minute-slider" type="range" min="0" max="55" value="0" step="5" class="w-full" oninput="updateClockDisplay()">
-        </div>
-      </div>`;
-    updateClockDisplay();
-  }
-  window.updateClockDisplay = function(){
-    const hourSlider   = document.getElementById('hour-slider');
-    const minuteSlider = document.getElementById('minute-slider');
-    if (!hourSlider || !minuteSlider) return;
-    const hour   = parseInt(hourSlider.value);
-    const minute = parseInt(minuteSlider.value);
-    const hourDeg   = (hour % 12 + minute / 60) * 30;
-    const minuteDeg = minute * 6;
-    const hourHand = document.getElementById('hour-hand');
-    const minuteHand = document.getElementById('minute-hand');
-    const digitalDisplay = document.getElementById('digital-display');
-    if (hourHand && minuteHand) {
-      hourHand.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
-      minuteHand.style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+    function clearActivity() {
+        currentActivity = 0;
+        document.getElementById('activity-content').innerHTML = `<div class="py-10 text-center"><div class="text-8xl mb-6 animate-pulse">🕰️</div><h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2><p class="text-2xl text-slate-500 mb-8 font-semibold">Pilih butang di bawah.</p></div>`;
+        setInfo("Pilih aktiviti untuk mula belajar!");
     }
-    if (digitalDisplay) {
-      const hourStr = String(hour).padStart(2,'0');
-      const minStr  = String(minute).padStart(2,'0');
-      digitalDisplay.textContent = `${hourStr}:${minStr}`;
+    function nextActivity() { let next = currentActivity + 1; if (next > 5) next = 1; loadActivity(next); }
+
+    /* =========================================
+       LOGIK AKTIVITI (MASA & WAKTU)
+       ========================================= */
+
+    /* 1. Jam Ajaib (Sandbox) */
+    function loadClockSandbox(content) {
+        setInfo("Gerakkan slider untuk memutar jam.");
+        content.innerHTML = `
+            <div class="w-full max-w-4xl text-center">
+                <h3 class="text-3xl font-bold text-blue-600 mb-2">⚙️ Jam Ajaib</h3>
+                
+                <div class="bg-blue-50 rounded-3xl p-6 border-2 border-blue-200 inline-block relative">
+                    <div class="clock-face">
+                        <div id="hour-hand" class="clock-hand hour-hand"></div>
+                        <div id="minute-hand" class="clock-hand minute-hand"></div>
+                        <div class="clock-center"></div>
+                        ${[12, 3, 6, 9].map(n => {
+                            let style = "";
+                            if(n===12) style="top:10px; left:50%; transform:translateX(-50%)";
+                            if(n===6) style="bottom:10px; left:50%; transform:translateX(-50%)";
+                            if(n===9) style="left:10px; top:50%; transform:translateY(-50%)";
+                            if(n===3) style="right:10px; top:50%; transform:translateY(-50%)";
+                            return `<div class="clock-number" style="${style}">${n}</div>`;
+                        }).join('')}
+                    </div>
+                    <div id="digital-display" class="text-5xl font-mono font-bold text-slate-700 bg-white border-2 border-slate-300 rounded-xl px-6 py-2 inline-block mt-4">00:00</div>
+                </div>
+
+                <div class="max-w-md mx-auto mt-6 space-y-6 bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-sm">
+                    <div>
+                        <label class="block text-lg font-bold text-slate-500 mb-2">Jarum Jam (Pendek)</label>
+                        <input id="hour-slider" type="range" min="0" max="11" value="0" step="1" class="w-full h-4 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updateClockDisplay()">
+                    </div>
+                    <div>
+                        <label class="block text-lg font-bold text-slate-500 mb-2">Jarum Minit (Panjang)</label>
+                        <input id="minute-slider" type="range" min="0" max="55" value="0" step="5" class="w-full h-4 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-500" oninput="updateClockDisplay()">
+                    </div>
+                </div>
+            </div>
+        `;
+        updateClockDisplay();
     }
-  };
 
-  /* ====== Aktiviti 2: Eksplorasi Gandaan 5 ====== */
-  function loadExploreFives(content){
-    setInfo("Klik mana-mana nombor (1-12) untuk melihat padanan minitnya.");
-    const numbers = Array.from({length:12},(_,i)=>i+1);
-    content.innerHTML = `
-      <h3 class="text-2xl font-bold text-green-600 mb-6">5️⃣ Eksplorasi Gandaan 5 Minit</h3>
-      <p class="text-lg text-gray-600 mb-4">Setiap nombor pada jam mewakili 5 minit.</p>
-      <div class="grid grid-cols-4 md:grid-cols-6 gap-3">
-        ${numbers.map(num => `
-          <div class="number-card bg-green-100 hover:bg-green-200 border-2 border-green-300 rounded-xl p-4 text-center"
-               onclick="clickFive(${num})">
-            <div class="text-3xl font-bold text-green-800">${num}</div>
-          </div>`).join('')}
-      </div>
-      <div id="number-info" class="mt-6 p-4 bg-green-50 rounded-lg text-center text-xl font-semibold text-green-800 min-h-16">
-        Sentuh nombor untuk meneroka.
-      </div>`;
-  }
-  window.clickFive = function(num){
-    const info = document.getElementById('number-info');
-    const minutes = num * 5;
-    const msg = `Nombor ${num} bermaksud ${minutes} minit.`;
-    if (info) info.innerHTML = msg;
-    setInfo(msg); speak(msg);
-  };
+    window.updateClockDisplay = function() {
+        const hVal = parseInt(document.getElementById('hour-slider').value);
+        const mVal = parseInt(document.getElementById('minute-slider').value);
+        
+        const hDeg = (hVal % 12 + mVal / 60) * 30;
+        const mDeg = mVal * 6;
 
-  /* ====== Aktiviti 3: Garis Masa 24 Jam ====== */
-  function loadTimelineActivity(content){
-    setInfo("Gelongsor (slide) penanda masa untuk melihat aktiviti yang sesuai mengikut waktu siang dan malam.");
-    content.innerHTML = `
-      <h3 class="text-2xl font-bold text-purple-600 mb-6">☀️ Garis Masa 24 Jam</h3>
-      <div id="timeline-display" class="rounded-xl p-8 mb-6 shadow-inner">
-        <div id="timeline-time" class="text-5xl font-bold">00:00</div>
-        <div id="timeline-context" class="text-2xl font-semibold mb-2">Tengah Malam</div>
-        <div id="timeline-activity" class="text-xl">Masa untuk tidur...</div>
-      </div>
-      <input id="time-slider" type="range" min="0" max="23.5" value="0" step="0.5" class="w-full" oninput="updateTimeline(this.value)">`;
-    updateTimeline(0);
-  }
-  window.updateTimeline = function(value){
-    const val = parseFloat(value);
-    const hour = Math.floor(val);
-    const minute = (val % 1) * 60;
-    const timeStr = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
-    let context, activity, cssClass;
-    if (val < 5)      { context="Tengah Malam"; activity="Tidur nyenyak..."; cssClass="night"; }
-    else if (val < 7) { context="Subuh";        activity="Bersiap untuk bangun!"; cssClass="dawn"; }
-    else if (val < 9) { context="Pagi";         activity="Masa untuk sarapan dan ke sekolah."; cssClass="day"; }
-    else if (val < 12){ context="Pagi";         activity="Belajar di sekolah."; cssClass="day"; }
-    else if (val < 14){ context="Tengahari";    activity="Makan tengahari dan berehat."; cssClass="day"; }
-    else if (val < 17){ context="Petang";       activity="Balik dari sekolah."; cssClass="day"; }
-    else if (val < 19){ context="Petang";       activity="Masa untuk bermain! (Contoh: 5:30 petang)"; cssClass="dusk"; }
-    else if (val < 21){ context="Malam";        activity="Makan malam dan kerja rumah."; cssClass="night"; }
-    else              { context="Malam";        activity="Bersiap untuk tidur."; cssClass="night"; }
-    const tt=document.getElementById('timeline-time');
-    const tc=document.getElementById('timeline-context');
-    const ta=document.getElementById('timeline-activity');
-    if(tt) tt.textContent=timeStr;
-    if(tc) tc.textContent=context;
-    if(ta) ta.textContent=activity;
-    const display = document.getElementById('timeline-display');
-    if (display){
-      display.classList.remove('night','dawn','day','dusk');
-      display.classList.add(cssClass);
+        document.getElementById('hour-hand').style.transform = `translateX(-50%) rotate(${hDeg}deg)`;
+        document.getElementById('minute-hand').style.transform = `translateX(-50%) rotate(${mDeg}deg)`;
+        
+        const timeStr = `${String(hVal || 12).padStart(2,'0')}:${String(mVal).padStart(2,'0')}`;
+        document.getElementById('digital-display').textContent = timeStr;
     }
-    if (Math.abs(val - 17.5) < 0.001){ setInfo("Ya! 5:30 petang adalah masa untuk bermain."); speak("Ya! 5:30 petang adalah masa untuk bermain."); }
-  };
 
-  /* ====== Aktiviti 4: Padanan Waktu ====== */
-  function loadTimeMatching(content){
-    setInfo("Seret sebutan waktu (kad oren) ke padanan jam digital yang betul.");
-    const times = [
-      { digital: "03:30", words: "Pukul Tiga Setengah" },
-      { digital: "02:00", words: "Pukul Dua" },
-      { digital: "05:15", words: "Pukul Lima Suku" },
-      { digital: "07:00", words: "Pukul Tujuh" }
-    ];
-    const shuffledWords = [...times].sort(() => Math.random() - 0.5).map(t => t.words);
-    content.innerHTML = `
-      <h3 class="text-2xl font-bold text-orange-600 mb-6">📋 Padanan Waktu</h3>
-      <div class="mb-8">
-        <h4 class="text-lg font-semibold mb-3">Pilih Sebutan (Seret):</h4>
-        <div id="time-choices" class="flex flex-wrap justify-center gap-4">
-          ${shuffledWords.map(words => `
-            <div class="number-card bg-orange-100 border-2 border-orange-300 rounded-lg p-4 text-lg font-bold text-orange-800 cursor-move"
-                 draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-words="${words}">
-              ${words}
-            </div>`).join('')}
-        </div>
-      </div>
-      <div>
-        <h4 class="text-lg font-semibold mb-3">Padankan di Sini:</h4>
-        <div id="match-line" class="space-y-3 max-w-sm mx-auto">
-          ${times.map(t => `
-            <div class="flex items-center justify-between gap-3 p-3 bg-gray-100 rounded-lg">
-              <span class="number-card bg-gray-200 rounded-lg p-3 text-2xl font-bold">${t.digital}</span>
-              <span class="text-2xl font-bold">➡️</span>
-              <div class="drop-zone rounded-lg p-3 text-lg font-bold w-52"
-                   ondrop="dropOnMatch(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"
-                   data-correct="${t.words}">__</div>
-            </div>`).join('')}
-        </div>
-      </div>`;
-  }
-  window.dropOnMatch = function(e){
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    if (!draggedElement) return;
-    const draggedWords = draggedElement.dataset.words;
-    const correctWords = e.currentTarget.dataset.correct;
-    if (draggedWords === correctWords) {
-      e.currentTarget.innerHTML = draggedWords;
-      e.currentTarget.classList.add('drop-zone-filled');
-      e.currentTarget.classList.remove('drop-zone');
-      e.currentTarget.removeAttribute('ondrop');
-      draggedElement.remove();
-      draggedElement = null;
-      const msg = `Betul! ${correctWords}.`; setInfo(msg); speak(msg);
-      if (document.querySelectorAll('#match-line .drop-zone').length === 0) { setInfo("Syabas! Semua padanan betul!"); speak("Syabas! Semua padanan betul!"); }
-    } else {
-      setInfo(`Bukan di situ. Cuba lagi.`); speak(`Bukan di situ. Cuba lagi.`);
-      e.currentTarget.classList.add('shake'); setTimeout(() => e.currentTarget.classList.remove('shake'), 500);
+    /* 2. Eksplorasi Gandaan 5 */
+    function loadExploreFives(content) {
+        setInfo("Klik nombor jam untuk tahu minitnya.");
+        const numbers = Array.from({length:12},(_,i)=>i+1);
+        
+        content.innerHTML = `
+            <div class="w-full max-w-5xl text-center">
+                <h3 class="text-3xl font-bold text-green-600 mb-6">5️⃣ Sifir 5 (Minit)</h3>
+                
+                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                    ${numbers.map(num => `
+                        <div onclick="clickFive(${num})" class="item-card bg-green-50 hover:bg-green-100 border-green-200 text-green-800">
+                            <div class="text-4xl font-black mb-2">${num}</div>
+                            <div class="text-xs uppercase font-bold text-green-600">Jarum Panjang</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="five-result" class="bg-white border-4 border-green-400 rounded-3xl p-8 shadow-lg max-w-2xl mx-auto transition-all opacity-0 scale-95">
+                    <div id="five-text" class="text-3xl font-bold text-slate-700">Sentuh nombor di atas!</div>
+                </div>
+            </div>
+        `;
     }
-  };
 
-  /* ====== Aktiviti 5: Jadual Saya ====== */
-  function loadScheduleBuilder(content){
-    setInfo("Bina jadual anda! Seret aktiviti ke slot, kemudian pilih masa.");
-    const activities = ["Bangun Tidur","Sarapan","Pergi Sekolah","Makan Tengahari","Bermain Petang","Kerja Rumah","Makan Malam","Tidur"];
-    content.innerHTML = `
-      <h3 class="text-2xl font-bold text-red-600 mb-6">🧑‍🎨 Jadual Saya</h3>
-      <div class="mb-8">
-        <h4 class="text-lg font-semibold mb-3">Pilih Aktiviti (Seret):</h4>
-        <div id="activity-bank" class="flex flex-wrap justify-center gap-3">
-          ${activities.map(act => `
-            <div class="number-card bg-red-100 border-2 border-red-300 rounded-lg p-3 text-md font-bold text-red-800 cursor-move"
-                 draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-activity="${act}">
-              ${act}
-            </div>`).join('')}
-        </div>
-      </div>
-      <div>
-        <h4 class="text-lg font-semibold mb-3">Jadual Anda (Letak di sini):</h4>
-        <div id="schedule-slots" class="space-y-3 max-w-lg mx-auto">
-          ${[1,2,3,4].map(i => `
-            <div class="flex items-center justify-between gap-3 p-3 bg-gray-100 rounded-lg">
-              <input type="time" class="p-2 border-2 rounded-lg" aria-label="Pilih masa untuk slot ${i}">
-              <div class="drop-zone rounded-lg p-3 text-lg font-bold w-full"
-                   ondrop="dropOnSchedule(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-slot="${i}">
-                Letak aktiviti di sini...
-              </div>
-            </div>`).join('')}
-        </div>
-      </div>`;
-  }
-  window.dropOnSchedule = function(e){
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    if (!draggedElement) return;
-    const activityName = draggedElement.dataset.activity;
-    e.currentTarget.textContent = activityName;
-    e.currentTarget.classList.add('drop-zone-filled','bg-red-100','text-red-800');
-    e.currentTarget.classList.remove('drop-zone');
-    draggedElement = null;
-    const msg = `Aktiviti "${activityName}" telah ditambah. Bagus!`; setInfo(msg); speak(msg);
-  };
-
-  /* ====== Kawalan Umum ====== */
-  window.clearActivity = function(){
-    currentActivity = 0;
-    const ac = document.getElementById('activity-content');
-    if (ac) {
-      ac.innerHTML = `
-        <div class="text-center py-16">
-          <div class="text-6xl mb-4">⏰</div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">Kemahiran Pemulihan: Masa dan Waktu</h2>
-          <p class="text-xl text-gray-600 mb-8">Pilih aktiviti di bawah untuk meneroka konsep jam dan masa.</p>
-          <div class="text-4xl">👇</div>
-        </div>`;
+    window.clickFive = function(num) {
+        const resBox = document.getElementById('five-result');
+        const text = document.getElementById('five-text');
+        
+        resBox.classList.remove('opacity-0', 'scale-95');
+        const min = num * 5;
+        const msg = `Nombor ${num} ialah ${min} minit!`;
+        
+        text.innerHTML = `<span class="text-6xl block mb-2">⏱️</span> ${msg}`;
+        speak(msg);
     }
-    setInfo("Pilih aktiviti untuk mula belajar masa dan waktu!");
-  };
-  window.nextActivity = function(){
-    if (currentActivity === 0) return loadActivity(1);
-    if (currentActivity < 5)   return loadActivity(currentActivity + 1);
-    return loadActivity(1);
-  };
 
-  // Resume TTS jika pelayar pause
-  if ('speechSynthesis' in window) {
-    setInterval(() => { try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch(e){} }, 1000);
-  }
-})();
-</script>
+    /* 3. Garis Masa 24 Jam */
+    function loadTimelineActivity(content) {
+        setInfo("Gerakkan slider untuk lihat aktiviti siang dan malam.");
+        content.innerHTML = `
+            <div class="w-full max-w-4xl text-center">
+                <h3 class="text-3xl font-bold text-purple-600 mb-6">☀️ Garis Masa 24 Jam</h3>
+                
+                <div id="timeline-display" class="night rounded-3xl p-10 mb-8 shadow-inner min-h-[300px] flex flex-col justify-center items-center">
+                    <div id="timeline-time" class="text-6xl font-mono font-black mb-4">00:00</div>
+                    <div id="timeline-context" class="text-3xl font-bold uppercase tracking-wider mb-2 opacity-80">Tengah Malam</div>
+                    <div id="timeline-activity" class="text-2xl font-semibold bg-white/20 px-6 py-2 rounded-full backdrop-blur-sm">Masa untuk tidur...</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border-2 border-slate-200">
+                    <input id="time-slider" type="range" min="0" max="23.5" value="0" step="0.5" class="w-full h-6 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600" oninput="updateTimeline(this.value)">
+                    <div class="flex justify-between text-sm font-bold text-slate-400 mt-2 px-1">
+                        <span>00:00</span><span>12:00</span><span>23:30</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        updateTimeline(0);
+    }
+
+    window.updateTimeline = function(val) {
+        val = parseFloat(val);
+        const h = Math.floor(val);
+        const m = (val % 1) * 60;
+        const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        
+        let ctx, act, cls;
+        if (val < 5) { ctx="Tengah Malam"; act="Tidur nyenyak..."; cls="night"; }
+        else if (val < 7) { ctx="Subuh"; act="Bangun tidur & Solat"; cls="dawn"; }
+        else if (val < 12) { ctx="Pagi"; act="Pergi Sekolah / Belajar"; cls="day"; }
+        else if (val < 14) { ctx="Tengahari"; act="Makan & Rehat"; cls="day"; }
+        else if (val < 17) { ctx="Petang"; act="Balik Sekolah / Koko"; cls="day"; }
+        else if (val < 19) { ctx="Lewat Petang"; act="Riadah & Main"; cls="dusk"; }
+        else if (val < 21) { ctx="Malam"; act="Makan Malam & Ulangkaji"; cls="night"; }
+        else { ctx="Malam"; act="Tidur"; cls="night"; }
+
+        document.getElementById('timeline-time').textContent = timeStr;
+        document.getElementById('timeline-context').textContent = ctx;
+        document.getElementById('timeline-activity').textContent = act;
+        
+        const disp = document.getElementById('timeline-display');
+        disp.className = `rounded-3xl p-10 mb-8 shadow-inner min-h-[300px] flex flex-col justify-center items-center ${cls}`;
+        
+        if(val === 17.5) speak("5:30 Petang. Masa bermain!");
+    }
+
+    /* 4. Padanan Waktu */
+    function loadTimeMatching(content) {
+        setInfo("Seret kad oren ke kotak jawapan yang betul.");
+        const pairs = [
+            { t: "03:30", w: "Tiga Setengah" },
+            { t: "02:00", w: "Pukul Dua" },
+            { t: "05:15", w: "Lima Suku" },
+            { t: "07:45", w: "Tujuh Tiga Suku" }
+        ];
+        // Shuffle items
+        const words = [...pairs].sort(()=>Math.random()-0.5);
+
+        content.innerHTML = `
+            <div class="w-full max-w-5xl">
+                <h3 class="text-3xl font-bold text-orange-600 mb-6 text-center">📋 Padanan Waktu</h3>
+                
+                <div class="flex flex-wrap justify-center gap-4 mb-10 p-6 bg-orange-50 rounded-3xl border-2 border-orange-200">
+                    ${words.map(p => `
+                        <div class="item-card bg-white border-orange-300 text-orange-800 draggable hover:scale-105" 
+                             draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-val="${p.w}">
+                            ${p.w}
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${pairs.map(p => `
+                        <div class="flex items-center justify-between p-4 bg-white border-2 border-slate-200 rounded-xl shadow-sm">
+                            <div class="text-4xl font-mono font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">${p.t}</div>
+                            <div class="text-2xl">➡️</div>
+                            <div class="drop-zone w-48" ondrop="dropMatch(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-ans="${p.w}">
+                                <span class="text-slate-300 text-sm">Letak Sini</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    window.dropMatch = function(e) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+        if(!draggedElement) return;
+        
+        const val = draggedElement.dataset.val;
+        const ans = e.currentTarget.dataset.ans;
+
+        if(val === ans) {
+            e.currentTarget.innerHTML = `<span class="text-lg font-bold text-green-700">${val}</span>`;
+            e.currentTarget.classList.add('drop-zone-filled');
+            draggedElement.remove();
+            speak("Betul!");
+            
+            // Check win
+            if(!document.querySelector('.draggable')) {
+                triggerWin(); speak("Tahniah! Semua betul.");
+            }
+        } else {
+            speak("Salah. Cuba lagi.");
+            e.currentTarget.classList.add('shake');
+            setTimeout(()=>e.currentTarget.classList.remove('shake'), 500);
+        }
+    }
+
+    /* 5. Jadual Saya */
+    function loadScheduleBuilder(content) {
+        setInfo("Bina jadual harian anda. Tarik aktiviti ke dalam kotak.");
+        const acts = ["Bangun Tidur", "Sarapan", "Sekolah", "Main", "Ulangkaji", "Tidur"];
+        
+        content.innerHTML = `
+            <div class="w-full max-w-5xl">
+                <h3 class="text-3xl font-bold text-red-600 mb-6 text-center">📅 Jadual Saya</h3>
+
+                <div class="flex flex-wrap justify-center gap-3 mb-8 p-6 bg-red-50 rounded-3xl border-2 border-red-200">
+                    ${acts.map(a => `
+                        <div class="item-card bg-white border-red-300 text-red-800 draggable" 
+                             draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-act="${a}">
+                            ${a}
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="space-y-4 max-w-2xl mx-auto">
+                    ${['07:00 Pagi', '10:00 Pagi', '02:00 Petang', '05:00 Petang', '08:00 Malam', '10:00 Malam'].map((time, i) => `
+                        <div class="flex items-center gap-4 p-3 bg-white rounded-xl border-2 border-slate-100 shadow-sm">
+                            <div class="w-32 text-right font-bold text-slate-500">${time}</div>
+                            <div class="drop-zone flex-grow" ondrop="dropSchedule(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                                <span class="text-slate-300 text-xs">Aktiviti?</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    window.dropSchedule = function(e) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+        if(!draggedElement) return;
+        
+        const act = draggedElement.dataset.act;
+        e.currentTarget.innerHTML = `<span class="text-lg font-bold text-red-700">${act}</span>`;
+        e.currentTarget.classList.add('drop-zone-filled');
+        speak(act);
+    }
+
+  </script>
 </body>
 </html>
